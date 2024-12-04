@@ -5,13 +5,14 @@ import { generateToken } from "../utils/jwt";
 import { comparePassword } from "../utils/auth";
 import crypto from "crypto";
 
-export const register = async (req: Request, res: Response) => {
+export const register = async (req: Request, res: Response): Promise<void> => {
     const { name, email, password } = req.body;
 
     try {
         const existingUser = await User.findOne({ email });
         if (existingUser) {
-            return res.status(400).json({ error: "Email already in use" });
+            res.status(400).json({ error: "Email already in use" });
+            return;
         }
 
         const hashedPassword = await hashPassword(password);
@@ -29,18 +30,19 @@ export const register = async (req: Request, res: Response) => {
 
 
 
-export const login = async (req: Request, res: Response) => {
+export const login = async (req: Request, res: Response): Promise<void> => {
     const { email, password } = req.body;
 
     try {
         const user = await User.findOne({ email });
-        if (!user) {
-            return res.status(404).json({ error: "User not found" });
+        if (user === null) {
+            res.status(404).json({ error: "User not found" });
+            return
         }
 
         const isPasswordValid = await comparePassword(password, user.password);
         if (!isPasswordValid) {
-            return res.status(400).json({ error: "Invalid credentials" });
+            res.status(400).json({ error: "Invalid credentials" });
         }
 
         const token = generateToken(user.id);
@@ -51,13 +53,13 @@ export const login = async (req: Request, res: Response) => {
 };
 
 
-export const forgotPassword = async (req: Request, res: Response) => {
+export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
     const { email } = req.body;
 
     try {
         const user = await User.findOne({ email });
         if (!user) {
-            return res.status(404).json({ error: "User not found" });
+            res.status(404).json({ error: "User not found" });
         }
 
         const resetToken = crypto.randomBytes(32).toString("hex");
